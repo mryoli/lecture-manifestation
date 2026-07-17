@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10182B">
+<title>L'Année de la Manifestation</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --encre:#10182B; --encre2:#182238; --parchemin:#F7F1E4; --parchemin2:#EFE7D4;
+  --or:#C9A227; --or-doux:#E3C866; --texte:#241E14; --texte-inv:#E9E4D6;
+  --sourdine:#9AA3B5; --sourdine2:#5A6478; --vert:#5E7C4A; --rouge:#A6533B;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--encre); color:var(--texte-inv);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.5;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.serif{font-family:Georgia,'Times New Roman',serif}
+main{max-width:560px;margin:0 auto;padding:16px 16px 8px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--or);font-weight:600}
+.muted{color:var(--sourdine)}
+button{font:inherit;border:0;cursor:pointer;border-radius:var(--r)}
+.btn{background:var(--or);color:var(--encre);font-weight:700;padding:13px 18px;width:100%;font-size:16px}
+.btn.secondaire{background:var(--encre2);color:var(--texte-inv);border:1px solid var(--sourdine2)}
+.btn.fait{background:var(--vert);color:#fff}
+.btn:active{transform:scale(.98)}
+
+/* ---- Carte parchemin (surface de lecture) ---- */
+.carte{background:var(--parchemin);color:var(--texte);border-radius:var(--r);padding:18px;margin:14px 0;
+  box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.carte .eyebrow{color:#8A6D12}
+.carte .muted{color:#7A705C}
+
+/* ---- Anneau de l'année (signature) ---- */
+.anneau-wrap{display:flex;flex-direction:column;align-items:center;padding:18px 0 6px}
+.anneau-wrap svg{width:210px;height:210px}
+.seg{stroke:var(--sourdine2);stroke-width:7;fill:none;opacity:.55}
+.seg.fait{stroke:var(--or);opacity:1}
+.seg.actuel{stroke:var(--or-doux);opacity:1;animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{stroke-width:7}50%{stroke-width:11}}
+@media (prefers-reduced-motion:reduce){.seg.actuel{animation:none;stroke-width:10}}
+.anneau-centre{font-family:Georgia,serif}
+.anneau-centre .gros{font-size:34px;fill:var(--parchemin)}
+.anneau-centre .petit{font-size:11px;fill:var(--sourdine);letter-spacing:.1em}
+
+/* ---- Navigation basse ---- */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--encre2);
+  border-top:1px solid rgba(154,163,181,.25);display:flex;z-index:10;
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--sourdine);padding:9px 0 7px;font-size:11px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:0}
+nav button.actif{color:var(--or)}
+nav .ico{font-size:20px;line-height:1}
+
+/* ---- Plan ---- */
+.trim{margin:14px 0}
+.trim summary{list-style:none;cursor:pointer;background:var(--encre2);border-radius:var(--r);
+  padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.trim summary::-webkit-details-marker{display:none}
+.trim[open] summary{border-radius:var(--r) var(--r) 0 0}
+.sem-liste{background:var(--encre2);border-radius:0 0 var(--r) var(--r);padding:4px 0 8px}
+.sem{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid rgba(154,163,181,.12)}
+.sem .num{font-family:Georgia,serif;color:var(--or);min-width:34px;font-weight:700}
+.sem .infos{flex:1;min-width:0}
+.sem .refs{font-size:14px}
+.sem .dates{font-size:12px;color:var(--sourdine)}
+.sem .coche{width:26px;height:26px;border-radius:50%;border:2px solid var(--sourdine2);flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent;background:none}
+.sem.faite .coche{background:var(--or);border-color:var(--or);color:var(--encre)}
+.sem.courante{background:rgba(201,162,39,.10)}
+.sem:active{background:rgba(201,162,39,.16)}
+
+/* ---- Lecture ---- */
+.barre-versions{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.puce{padding:8px 14px;border-radius:99px;background:var(--encre2);color:var(--sourdine);
+  border:1px solid var(--sourdine2);font-size:13px;font-weight:600}
+.puce.active{background:var(--or);color:var(--encre);border-color:var(--or)}
+.passage-titre{font-family:Georgia,serif;font-size:20px;margin:6px 0 2px;color:var(--texte)}
+.verset{margin:10px 0;font-family:Georgia,serif;font-size:17.5px;line-height:1.65}
+.verset .vnum{font-size:11px;color:var(--or);vertical-align:super;font-weight:700;margin-right:5px;font-family:system-ui}
+.verset .alt{display:block;margin-top:5px;padding:8px 10px 8px 12px;border-left:3px solid var(--or-doux);
+  background:var(--parchemin2);font-size:15.5px;color:#4A4335;border-radius:0 8px 8px 0}
+.verset .alt .vlabel{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A6D12;
+  font-family:system-ui;display:block;margin-bottom:2px}
+.question{border-left:3px solid var(--or);padding:10px 12px;margin:14px 0;font-style:italic;
+  background:rgba(201,162,39,.08);border-radius:0 8px 8px 0}
+.carte .question{background:rgba(140,109,18,.08)}
+
+/* ---- Réglages ---- */
+.regl{background:var(--encre2);border-radius:var(--r);padding:16px;margin:12px 0}
+.regl label{display:block;font-weight:600;margin-bottom:6px}
+.regl input[type=time],.regl select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--sourdine2);
+  background:var(--encre);color:var(--texte-inv);font-size:16px}
+.note{font-size:13px;color:var(--sourdine);margin-top:8px;line-height:1.45}
+.etat{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:6px}
+.etat.ok{background:rgba(94,124,74,.25);color:#9FC788}
+.etat.non{background:rgba(166,83,59,.22);color:#E0A18C}
+.retour{background:none;color:var(--or);font-weight:600;padding:8px 0;font-size:15px}
+hr.filet{border:0;border-top:1px solid rgba(154,163,181,.2);margin:16px 0}
+.chargement{text-align:center;padding:40px 0;color:var(--sourdine)}
+</style>
+</head>
+<body>
+<main id="app"><div class="chargement">Ouverture…</div></main>
+<nav id="nav"></nav>
+
+<script>
+/* ================= DONNÉES DU PLAN ================= */
+const DEBUT = new Date(2026, 6, 18);            // samedi 18 juillet 2026
+const LIVRES = {5:'Deutéronome',16:'Néhémie',19:'Psaumes',20:'Proverbes',21:'Ecclésiaste',
+  40:'Matthieu',41:'Marc',42:'Luc',43:'Jean',50:'Philippiens',59:'Jacques'};
+const VERSIONS = {lsg:{nom:'Segond 1910',fichier:'data/lsg_plan.json'},
+  darby:{nom:'Darby',fichier:'data/darby_plan.json'},
+  martin:{nom:'Martin 1744',fichier:'data/martin_plan.json'}};
+
+/* p: passages [{b,c,f?,t?}] — f/t = plage de versets, sinon chapitre entier */
+const PLAN = [
+ {r:"Luc 3:21-38 ; Psaume 1",p:[{b:42,c:3,f:21,t:38},{b:19,c:1}],q:"Quelle voix me définit en ce début d'année : celle du Père (« tu es mon fils bien-aimé ») ou celle des comparaisons ?"},
+ {r:"Matthieu 3 ; Jean 1:19-34",p:[{b:40,c:3},{b:43,c:1,f:19,t:34}],q:"Ai-je, comme Jean-Baptiste, la lucidité de dire qui je ne suis pas — avant de dire qui je suis ?"},
+ {r:"Matthieu 4:1-11 ; Deutéronome 6",p:[{b:40,c:4,f:1,t:11},{b:5,c:6}],q:"Quelles sont mes trois tentations récurrentes (besoin, spectacle, raccourci) et par quelle Parole y répondre ?"},
+ {r:"Luc 4:1-13 ; Deutéronome 7",p:[{b:42,c:4,f:1,t:13},{b:5,c:7}],q:"Le tentateur « s'éloigna jusqu'à un moment favorable » : quels sont mes moments de vulnérabilité ?"},
+ {r:"Deutéronome 8 ; Psaume 91",p:[{b:5,c:8},{b:19,c:91}],q:"Le désert précède l'abondance « afin de savoir ce qui est dans ton cœur » : qu'a révélé mon année 30-31 ?"},
+ {r:"Jean 1:35-51",p:[{b:43,c:1,f:35,t:51}],q:"« Venez et voyez » : qui sont les 3 à 5 personnes de mon premier cercle pour cette année ?"},
+ {r:"Jean 2 (Cana et le Temple)",p:[{b:43,c:2}],q:"À Cana, la gloire se manifeste d'abord dans le service discret : où suis-je appelé à exceller sans être vu ?"},
+ {r:"Jean 3:1-21 (Nicodème)",p:[{b:43,c:3,f:1,t:21}],q:"Qu'est-ce qui, dans ma vie, relève encore de la réforme extérieure et non de la nouvelle naissance ?"},
+ {r:"Jean 3:22-36",p:[{b:43,c:3,f:22,t:36}],q:"« Il faut qu'il croisse et que je diminue » : quelle ambition dois-je remettre à sa juste place ?"},
+ {r:"Jean 4:1-42 (la Samaritaine)",p:[{b:43,c:4,f:1,t:42}],q:"Jésus « devait passer par la Samarie » : quel détour improbable Dieu place-t-il sur ma route ?"},
+ {r:"Jean 4:43-54 ; Luc 4:14-30",p:[{b:43,c:4,f:43,t:54},{b:42,c:4,f:14,t:30}],q:"Le rejet à Nazareth : suis-je prêt à ce que la manifestation commence par une incompréhension des proches ?"},
+ {r:"Psaumes 16 et 139",p:[{b:19,c:16},{b:19,c:139}],q:"« Tu m'as tissé » : rédiger en une page qui je suis devant Dieu, avant toute fonction ou tout titre."},
+ {r:"Relecture de Jean 1–4 + bilan",p:[{b:43,c:1},{b:43,c:2},{b:43,c:3},{b:43,c:4}],q:"BILAN T1 : mes fondations (validation, victoire intérieure, premier cercle) sont-elles posées ? Qu'est-ce qui reste fragile ?"},
+ {r:"Matthieu 5:1-16 (Béatitudes)",p:[{b:40,c:5,f:1,t:16}],q:"Laquelle des huit béatitudes décrit le moins ma vie actuelle ? Pourquoi ?"},
+ {r:"Matthieu 5:17-48",p:[{b:40,c:5,f:17,t:48}],q:"« Mais moi, je vous dis » : dans quel domaine mon éthique est-elle conforme mais mon cœur non transformé ?"},
+ {r:"Matthieu 6:1-18 (la piété secrète)",p:[{b:40,c:6,f:1,t:18}],q:"Quelle pratique (don, prière, jeûne) puis-je installer cette année dans le secret absolu, sans témoin ?"},
+ {r:"Matthieu 6:19-34",p:[{b:40,c:6,f:19,t:34}],q:"Où est mon trésor cette année ? Nommer précisément l'inquiétude dominante et la déposer."},
+ {r:"Matthieu 7",p:[{b:40,c:7}],q:"Le test des deux maisons : sur quelle « roche » mes projets de manifestation sont-ils bâtis ?"},
+ {r:"Luc 6:17-49",p:[{b:42,c:6,f:17,t:49}],q:"La version de Luc ajoute les « malheurs » : quel succès potentiel de cette année pourrait devenir un piège ?"},
+ {r:"Jacques 1",p:[{b:59,c:1}],q:"« Mettez en pratique la Parole » : quelle décision concrète cette semaine, pas seulement une conviction ?"},
+ {r:"Jacques 2",p:[{b:59,c:2}],q:"Ma foi produit-elle des œuvres visibles pour les autres, ou seulement des intentions ?"},
+ {r:"Jacques 3",p:[{b:59,c:3}],q:"L'année de visibilité est l'année de la parole publique : ma langue est-elle prête ? Où dois-je me taire ?"},
+ {r:"Jacques 4–5",p:[{b:59,c:4},{b:59,c:5}],q:"« Si le Seigneur le veut » : mes plans pour 2027 sont-ils soumis à Dieu ou simplement annoncés ?"},
+ {r:"Proverbes 1–3",p:[{b:20,c:1},{b:20,c:2},{b:20,c:3}],q:"« Acquiers la sagesse » : quel conseil concret dois-je chercher, et auprès de qui, avant d'agir ?"},
+ {r:"Proverbes 4–6",p:[{b:20,c:4},{b:20,c:5},{b:20,c:6}],q:"Garder son cœur « plus que toute autre chose » : quelles entrées (contenus, relations) dois-je filtrer ?"},
+ {r:"Proverbes 7–9 + bilan",p:[{b:20,c:7},{b:20,c:8},{b:20,c:9}],q:"BILAN T2 (mi-parcours) : mes valeurs sont-elles désormais écrites et assumées ? Mon carnet contient-il ma « constitution personnelle » ?"},
+ {r:"Marc 1",p:[{b:41,c:1}],q:"Le rythme de Jésus : action publique, puis « longtemps avant le jour, il pria à l'écart » (1:35). Quel est mon lieu et mon heure de retrait ?"},
+ {r:"Marc 2",p:[{b:41,c:2}],q:"« Voyant leur foi » : qui porte le brancard avec moi ? Quel projet nécessite une équipe et non un exploit solitaire ?"},
+ {r:"Marc 3",p:[{b:41,c:3}],q:"Jésus choisit les Douze « pour qu'ils soient avec lui, et pour les envoyer » : être avant faire, dans cet ordre. Qui est-ce que je choisis ?"},
+ {r:"Marc 4",p:[{b:41,c:4}],q:"La semence pousse « sans qu'il sache comment » : où dois-je semer fidèlement et cesser de contrôler la croissance ?"},
+ {r:"Marc 5",p:[{b:41,c:5}],q:"Trois désespoirs (démoniaque, malade chronique, enfant morte) : quelle situation « impossible » dois-je oser aborder ?"},
+ {r:"Marc 6:1-29",p:[{b:41,c:6,f:1,t:29}],q:"Nazareth et la mort de Jean-Baptiste : la manifestation coexiste avec le rejet et la perte. Suis-je prêt à ce mélange ?"},
+ {r:"Matthieu 8–9",p:[{b:40,c:8},{b:40,c:9}],q:"Dix miracles en deux chapitres, puis « la moisson est grande » : quel est mon champ de moisson spécifique cette année ?"},
+ {r:"Matthieu 10 (l'envoi)",p:[{b:40,c:10}],q:"« Vous avez reçu gratuitement, donnez gratuitement » : qu'est-ce que je lance ce trimestre — concrètement, avec une date ?"},
+ {r:"Matthieu 11–12",p:[{b:40,c:11},{b:40,c:12}],q:"Jean-Baptiste doute, les villes ne se repentent pas : comment gérer les résultats décevants sans perdre le cap ?"},
+ {r:"Matthieu 13 (les paraboles)",p:[{b:40,c:13}],q:"Les quatre terrains : quel type de terrain suis-je devenu depuis janvier ? Et mes projets — quel terrain rencontrent-ils ?"},
+ {r:"Luc 7",p:[{b:42,c:7}],q:"Le centenier, la veuve, la pécheresse : la manifestation authentique se mesure à ceux qu'elle relève. Qui est relevé par mon travail ?"},
+ {r:"Luc 8",p:[{b:42,c:8}],q:"« Prenez garde à la manière dont vous écoutez » : quelle vérité entendue ce trimestre n'ai-je pas encore appliquée ?"},
+ {r:"Néhémie 1–2, 4, 6 + bilan",p:[{b:16,c:1},{b:16,c:2},{b:16,c:4},{b:16,c:6}],q:"BILAN T3 : Néhémie bâtit le mur en 52 jours malgré l'opposition. Qu'ai-je effectivement bâti ce trimestre ? Quelle opposition ai-je rencontrée, et comment ?"},
+ {r:"Jean 5",p:[{b:43,c:5}],q:"« Veux-tu être guéri ? » : quelle stagnation de longue date (habitude, excuse) dois-je laisser derrière moi avant mes 32 ans ?"},
+ {r:"Matthieu 14:1-21 ; Marc 6:30-44",p:[{b:40,c:14,f:1,t:21},{b:41,c:6,f:30,t:44}],q:"« Donnez-leur vous-mêmes à manger » : avec mes cinq pains, qu'est-ce que Dieu a multiplié cette année ?"},
+ {r:"Jean 6:1-15",p:[{b:43,c:6,f:1,t:15}],q:"Jésus refuse la couronne offerte par la foule. Quelle « couronne » (opportunité flatteuse mais hors appel) dois-je savoir refuser ?"},
+ {r:"Matthieu 14:22-36 ; Jean 6:16-21",p:[{b:40,c:14,f:22,t:36},{b:43,c:6,f:16,t:21}],q:"La quatrième veille de la nuit : dans quelle traversée contraire suis-je, et Jésus y marche-t-il vers moi ?"},
+ {r:"Jean 6:22-59 (le pain de vie)",p:[{b:43,c:6,f:22,t:59}],q:"La foule cherche le pain, pas la personne : ceux qui me suivent, que cherchent-ils vraiment ? Et moi, que leur offre-je ?"},
+ {r:"Jean 6:60-71 (la désertion)",p:[{b:43,c:6,f:60,t:71}],q:"« À qui irions-nous ? » : si tout succès visible disparaissait, qu'est-ce qui resterait de ma foi et de mon appel ?"},
+ {r:"Luc 9:1-27",p:[{b:42,c:9,f:1,t:27}],q:"« Que servirait-il à un homme de gagner le monde entier ? » : relire mes objectifs annuels à la lumière de ce verset."},
+ {r:"Ecclésiaste 1–3",p:[{b:21,c:1},{b:21,c:2},{b:21,c:3}],q:"« Un temps pour tout » : qu'est-ce qui touche à sa fin dans ma vie, et qu'est-ce qui commence ?"},
+ {r:"Ecclésiaste 4–6",p:[{b:21,c:4},{b:21,c:5},{b:21,c:6}],q:"« Mieux vaut une main pleine avec repos » : où est-ce que je cours après du vent ? Quelle sobriété adopter ?"},
+ {r:"Ecclésiaste 7–9",p:[{b:21,c:7},{b:21,c:8},{b:21,c:9}],q:"« Mieux vaut la fin d'une chose que son commencement » : comment bien terminer cette année plutôt que d'en lancer une autre trop vite ?"},
+ {r:"Ecclésiaste 10–12",p:[{b:21,c:10},{b:21,c:11},{b:21,c:12}],q:"« Crains Dieu et observe ses commandements » : formuler ma conclusion personnelle de l'année en une seule phrase."},
+ {r:"Philippiens 1–2",p:[{b:50,c:1},{b:50,c:2}],q:"« Il achèvera ce qu'il a commencé » : lister ce que Dieu a commencé cette année et que je lui confie pour la suite."},
+ {r:"Philippiens 3–4 + bilan annuel",p:[{b:50,c:3},{b:50,c:4},{b:40,c:16,f:13,t:28}],q:"BILAN DE L'ANNÉE : « oubliant ce qui est en arrière, je cours vers le but ». Préparer l'année 32 (Formation) : en qui vais-je investir en profondeur ? (Lecture d'ouverture incluse : Matthieu 16:13-28.)"}
+];
+const TRIMESTRES = [
+ {titre:"T1 — Consolider l'identité",sous:"Sem. 1–13 · 18 juil. – 16 oct. 2026",de:0,a:12},
+ {titre:"T2 — La constitution du Royaume",sous:"Sem. 14–26 · 17 oct. 2026 – 15 janv. 2027",de:13,a:25},
+ {titre:"T3 — Œuvrer : la manifestation",sous:"Sem. 27–39 · 16 janv. – 16 avr. 2027",de:26,a:38},
+ {titre:"T4 — Discerner : le test de Jean 6",sous:"Sem. 40–52 · 17 avr. – 16 juil. 2027",de:39,a:51}
+];
+
+/* ================= ÉTAT & STOCKAGE ================= */
+const MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+let etat = {
+  progres: JSON.parse(localStorage.getItem('progres')||'{}'),
+  settings: Object.assign({time:'06:00',version:'lsg',comparer:'',notif:true},
+            JSON.parse(localStorage.getItem('settings')||'{}')),
+  textes: {}, ecran:'aujourdhui', semaineOuverte:null
+};
+function sauver(){ localStorage.setItem('progres',JSON.stringify(etat.progres));
+  localStorage.setItem('settings',JSON.stringify(etat.settings));
+  kvPut('settings',etat.settings); }
+
+/* IndexedDB kv — partagé avec le service worker */
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('manif-db',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});}
+async function kvPut(k,v){try{const db=await idb();
+  db.transaction('kv','readwrite').objectStore('kv').put(v,k);}catch(e){}}
+
+/* ================= DATES & SEMAINES ================= */
+function datesSemaine(n){ // n: 1..52
+  const s=new Date(DEBUT.getTime()+(n-1)*7*86400000), e=new Date(s.getTime()+6*86400000);
+  const f=d=>d.getDate()+' '+MOIS[d.getMonth()];
+  return f(s)+' – '+f(e)+' '+e.getFullYear();
+}
+function semaineCourante(){
+  const diff=Math.floor((stripT(new Date())-stripT(DEBUT))/86400000);
+  if(diff<0) return 0;                 // avant le début
+  return Math.min(52, Math.floor(diff/7)+1);
+}
+function stripT(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
+function serie(){ // semaines consécutives lues jusqu'à la courante
+  const c=semaineCourante(); let s=0;
+  for(let w=c;w>=1;w--){ if(etat.progres[w]) s++; else if(w<c) break; else if(!etat.progres[w]&&w===c) continue; }
+  return s;
+}
+
+/* ================= TEXTES BIBLIQUES ================= */
+async function chargerVersion(v){
+  if(etat.textes[v]) return etat.textes[v];
+  const rep=await fetch(VERSIONS[v].fichier);
+  etat.textes[v]=await rep.json();
+  return etat.textes[v];
+}
+function versets(data,pass){
+  const ch=(data[pass.b]||{})[pass.c]||{};
+  const nums=Object.keys(ch).map(Number).sort((a,b)=>a-b);
+  const de=pass.f||1, a=pass.t||Infinity;
+  return nums.filter(n=>n>=de&&n<=a).map(n=>({n,t:ch[n]}));
+}
+function refLisible(pass){
+  let s=LIVRES[pass.b]+' '+pass.c;
+  if(pass.f) s+=':'+pass.f+(pass.t?'-'+pass.t:'');
+  return s;
+}
+
+/* ================= RENDU ================= */
+const app=document.getElementById('app');
+const nav=document.getElementById('nav');
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function rendreNav(){
+  const items=[['aujourdhui','🕯️',"Aujourd'hui"],['plan','📖','Plan'],['lecture','✦','Lecture'],['reglages','⚙︎','Réglages']];
+  nav.innerHTML=items.map(([id,ico,lab])=>
+    `<button data-e="${id}" class="${etat.ecran===id?'actif':''}"><span class="ico">${ico}</span>${lab}</button>`).join('');
+  nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{etat.ecran=b.dataset.e;
+    if(b.dataset.e==='lecture'&&!etat.semaineOuverte) etat.semaineOuverte=Math.max(1,semaineCourante());
+    rendre();});
+}
+
+function anneauSVG(){
+  const c=semaineCourante(); const R=88,cx=105,cy=105,n=52;
+  let segs='';
+  for(let i=0;i<n;i++){
+    const a0=(-90+i*(360/n)+1.6)*Math.PI/180, a1=(-90+(i+1)*(360/n)-1.6)*Math.PI/180;
+    const x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0),x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
+    const cls=etat.progres[i+1]?'seg fait':(i+1===c?'seg actuel':'seg');
+    segs+=`<path class="${cls}" d="M${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}"/>`;
+  }
+  const faites=Object.keys(etat.progres).length;
+  return `<svg viewBox="0 0 210 210">${segs}
+    <text class="anneau-centre gros" x="105" y="100" text-anchor="middle">${faites}<tspan class="petit" dy="0"> /52</tspan></text>
+    <text class="anneau-centre petit" x="105" y="122" text-anchor="middle">SEMAINES LUES</text></svg>`;
+}
+
+function ecranAujourdhui(){
+  const c=semaineCourante();
+  let carte='';
+  if(c===0){
+    const j=Math.ceil((stripT(DEBUT)-stripT(new Date()))/86400000);
+    carte=`<div class="carte"><div class="eyebrow">Avant le départ</div>
+      <h2 class="serif" style="margin:6px 0">Le plan commence dans ${j} jour${j>1?'s':''}</h2>
+      <p class="muted">Samedi 18 juillet 2026 — jour du 31e anniversaire. En attendant, les lectures sont déjà consultables dans l'onglet Plan.</p></div>`;
+  } else {
+    const s=PLAN[c-1];
+    carte=`<div class="carte">
+      <div class="eyebrow">Semaine ${c} · ${datesSemaine(c)}</div>
+      <h2 class="serif" style="margin:6px 0 4px">${esc(s.r)}</h2>
+      <div class="question serif">${esc(s.q)}</div>
+      <button class="btn" data-lire="${c}">Ouvrir la lecture</button>
+      <div style="height:10px"></div>
+      <button class="btn ${etat.progres[c]?'fait':'secondaire'}" data-coche="${c}">
+        ${etat.progres[c]?'✓ Semaine lue':'Marquer la semaine comme lue'}</button>
+    </div>`;
+  }
+  const st=serie();
+  app.innerHTML=`
+    <div class="eyebrow" style="margin-top:6px">L'Année de la Manifestation</div>
+    <h1 class="serif" style="font-size:24px;line-height:1.25;margin:2px 0 0">« Ta parole est une lampe à mes pieds »</h1>
+    <div class="anneau-wrap">${anneauSVG()}
+      <div class="muted" style="font-size:13px">${st>0?`Série en cours : ${st} semaine${st>1?'s':''} 🔥`:'18 juil. 2026 → 16 juil. 2027'}</div></div>
+    ${carte}`;
+  brancherActions();
+}
+
+function ecranPlan(){
+  const c=semaineCourante();
+  app.innerHTML=`<h1 class="serif" style="font-size:22px;margin:8px 0 4px">Le plan des 52 semaines</h1>
+    <p class="muted" style="font-size:14px">Touchez une semaine pour lire. Touchez le rond pour cocher.</p>`+
+  TRIMESTRES.map((t,ti)=>{
+    const ouvert=(c>=t.de+1&&c<=t.a+1)||c===0&&ti===0;
+    const lignes=PLAN.slice(t.de,t.a+1).map((s,ix)=>{
+      const w=t.de+ix+1;
+      return `<div class="sem ${etat.progres[w]?'faite':''} ${w===c?'courante':''}" data-lire="${w}">
+        <span class="num">S${w}</span>
+        <span class="infos"><span class="refs">${esc(s.r)}</span><br><span class="dates">${datesSemaine(w)}</span></span>
+        <button class="coche" data-coche="${w}" aria-label="Marquer la semaine ${w}">✓</button></div>`;
+    }).join('');
+    return `<details class="trim" ${ouvert?'open':''}><summary>
+      <span><strong>${t.titre}</strong><br><span class="muted" style="font-size:12px">${t.sous}</span></span>
+      <span class="muted">${PLAN.slice(t.de,t.a+1).filter((_,ix)=>etat.progres[t.de+ix+1]).length}/13</span>
+      </summary><div class="sem-liste">${lignes}</div></details>`;
+  }).join('');
+  brancherActions();
+}
+
+async function ecranLecture(){
+  const w=etat.semaineOuverte||Math.max(1,semaineCourante());
+  const s=PLAN[w-1];
+  const v1=etat.settings.version, v2=etat.settings.comparer;
+  app.innerHTML=`
+    <button class="retour" id="retour">‹ Plan</button>
+    <div class="eyebrow">Semaine ${w} · ${datesSemaine(w)}</div>
+    <h1 class="serif" style="font-size:22px;margin:2px 0 6px">${esc(s.r)}</h1>
+    <div class="barre-versions" id="vbar">
+      ${Object.entries(VERSIONS).map(([k,v])=>`<button class="puce ${k===v1?'active':''}" data-v="${k}">${v.nom}</button>`).join('')}
+      <button class="puce ${v2?'active':''}" id="btn-comp">${v2?('⇄ '+VERSIONS[v2].nom):'⇄ Comparer'}</button>
+    </div>
+    <div id="texte"><div class="chargement">Chargement du texte…</div></div>
+    <div class="carte"><div class="eyebrow">Méditation de la semaine</div>
+      <div class="question serif">${esc(s.q)}</div>
+      <button class="btn ${etat.progres[w]?'fait':''}" data-coche="${w}">${etat.progres[w]?'✓ Semaine lue':'Marquer la semaine comme lue'}</button>
+    </div>`;
+  document.getElementById('retour').onclick=()=>{etat.ecran='plan';rendre();};
+  document.querySelectorAll('#vbar [data-v]').forEach(b=>b.onclick=()=>{
+    etat.settings.version=b.dataset.v;
+    if(etat.settings.comparer===b.dataset.v) etat.settings.comparer='';
+    sauver(); rendre();});
+  document.getElementById('btn-comp').onclick=()=>{
+    const autres=Object.keys(VERSIONS).filter(k=>k!==etat.settings.version);
+    const idx=autres.indexOf(etat.settings.comparer);
+    etat.settings.comparer = etat.settings.comparer==='' ? autres[0] : (idx<autres.length-1?autres[idx+1]:'');
+    sauver(); rendre();};
+  brancherActions();
+
+  try{
+    const d1=await chargerVersion(v1);
+    const d2=v2?await chargerVersion(v2):null;
+    const zone=document.getElementById('texte'); if(!zone) return;
+    zone.innerHTML=s.p.map(pass=>{
+      const vv=versets(d1,pass);
+      const corps=vv.map(x=>{
+        let alt='';
+        if(d2){
+          const m=(d2[pass.b]&&d2[pass.b][pass.c]&&d2[pass.b][pass.c][x.n])||'';
+          if(m) alt=`<span class="alt"><span class="vlabel">${VERSIONS[v2].nom}</span>${esc(m)}</span>`;
+        }
+        return `<p class="verset"><span class="vnum">${x.n}</span>${esc(x.t)}${alt}</p>`;
+      }).join('');
+      return `<div class="carte"><div class="eyebrow">${esc(refLisible(pass))} · ${VERSIONS[v1].nom}</div>${corps}</div>`;
+    }).join('');
+  }catch(e){
+    const zone=document.getElementById('texte');
+    if(zone) zone.innerHTML=`<div class="carte">Le texte n'a pas pu être chargé. Vérifiez la connexion pour la première ouverture — ensuite tout fonctionne hors-ligne.</div>`;
+  }
+}
+
+function ecranReglages(){
+  const st=etat.settings;
+  const perm=('Notification' in window)?Notification.permission:'unsupported';
+  app.innerHTML=`
+    <h1 class="serif" style="font-size:22px;margin:8px 0 10px">Réglages</h1>
+
+    <div class="regl">
+      <label for="heure">Heure du rappel quotidien</label>
+      <input type="time" id="heure" value="${st.time}">
+      <div class="note">Le rappel se déclenche chaque jour à partir de cette heure si la lecture n'est pas encore ouverte.</div>
+    </div>
+
+    <div class="regl">
+      <label>Notifications
+        <span class="etat ${perm==='granted'?'ok':'non'}">${perm==='granted'?'autorisées':perm==='denied'?'refusées':'à autoriser'}</span></label>
+      <button class="btn secondaire" id="btn-notif">${perm==='granted'?'Envoyer une notification de test':'Autoriser les notifications'}</button>
+      <div class="note">Sur Android, l'appli installée utilise la synchronisation périodique du navigateur : le rappel arrive dans la journée, sans garantie d'heure exacte. Pour un rappel fiable à heure fixe, ajoutez aussi le rappel à votre agenda ci-dessous.</div>
+    </div>
+
+    <div class="regl">
+      <label>Rappel fiable via l'agenda</label>
+      <button class="btn secondaire" id="btn-ics">Ajouter à mon agenda (.ics)</button>
+      <div class="note">Crée un événement quotidien récurrent « Lecture biblique » à l'heure choisie, du 18 juil. 2026 au 16 juil. 2027, avec alerte. Google Agenda et l'agenda Android le prennent en charge : c'est le rappel garanti à 100 %.</div>
+    </div>
+
+    <div class="regl">
+      <label for="vdef">Version de lecture par défaut</label>
+      <select id="vdef">${Object.entries(VERSIONS).map(([k,v])=>`<option value="${k}" ${k===st.version?'selected':''}>${v.nom}</option>`).join('')}</select>
+      <div class="note">Trois versions du domaine public, intégralement hors-ligne : Louis Segond 1910, Darby, Martin 1744. La comparaison verset par verset se règle dans l'écran Lecture (bouton ⇄).</div>
+    </div>
+
+    <hr class="filet">
+    <button class="btn secondaire" id="btn-reset" style="color:var(--rouge)">Réinitialiser la progression</button>
+    <p class="note" style="text-align:center;margin-top:14px">« Ta parole est une lampe à mes pieds, et une lumière sur mon sentier. » — Ps 119:105<br>Données 100 % locales sur cet appareil.</p>`;
+
+  document.getElementById('heure').onchange=e=>{etat.settings.time=e.target.value;sauver();programmerRappelLocal();};
+  document.getElementById('vdef').onchange=e=>{etat.settings.version=e.target.value;
+    if(etat.settings.comparer===e.target.value)etat.settings.comparer='';sauver();};
+  document.getElementById('btn-notif').onclick=async()=>{
+    if(!('Notification' in window)){alert('Notifications non prises en charge par ce navigateur.');return;}
+    const p=await Notification.requestPermission();
+    if(p==='granted'){
+      const reg=await navigator.serviceWorker.ready;
+      reg.showNotification('Rappel activé 🕯️',{body:'Vous recevrez un rappel de lecture chaque jour à partir de '+etat.settings.time+'.',icon:'icon-192.png'});
+      activerSyncPeriodique();
+    }
+    rendre();};
+  document.getElementById('btn-ics').onclick=telechargerICS;
+  document.getElementById('btn-reset').onclick=()=>{
+    if(confirm('Effacer toute la progression (semaines cochées) ?')){etat.progres={};sauver();rendre();}};
+}
+
+function brancherActions(){
+  document.querySelectorAll('[data-lire]').forEach(el=>el.addEventListener('click',ev=>{
+    if(ev.target.closest('[data-coche]'))return;
+    etat.semaineOuverte=parseInt(el.dataset.lire,10);
+    kvPut('lastReadDay',new Date().toISOString().slice(0,10));
+    etat.ecran='lecture';rendre();}));
+  document.querySelectorAll('[data-coche]').forEach(el=>el.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    const w=parseInt(el.dataset.coche,10);
+    if(etat.progres[w])delete etat.progres[w];else etat.progres[w]=true;
+    kvPut('lastReadDay',new Date().toISOString().slice(0,10));
+    sauver();rendre();}));
+}
+
+function rendre(){
+  rendreNav();
+  ({aujourdhui:ecranAujourdhui,plan:ecranPlan,lecture:ecranLecture,reglages:ecranReglages})[etat.ecran]();
+  window.scrollTo(0,0);
+}
+
+/* ================= RAPPELS ================= */
+let minuterie=null;
+function programmerRappelLocal(){ // pendant que l'appli est ouverte
+  if(minuterie)clearTimeout(minuterie);
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const [h,m]=etat.settings.time.split(':').map(Number);
+  const cible=new Date();cible.setHours(h,m,0,0);
+  if(cible<=new Date())cible.setDate(cible.getDate()+1);
+  minuterie=setTimeout(async()=>{
+    const reg=await navigator.serviceWorker.ready;
+    reg.active&&reg.active.postMessage('show-reminder');
+    programmerRappelLocal();
+  },cible-new Date());
+}
+async function activerSyncPeriodique(){
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    if('periodicSync' in reg){
+      const perm=await navigator.permissions.query({name:'periodic-background-sync'});
+      if(perm.state==='granted')
+        await reg.periodicSync.register('rappel-lecture',{minInterval:6*60*60*1000});
+    }
+  }catch(e){}
+}
+function telechargerICS(){
+  const [h,m]=etat.settings.time.split(':');
+  const dt='20260718T'+h.padStart(2,'0')+m.padStart(2,'0')+'00';
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Manifestation//FR',
+    'BEGIN:VEVENT','UID:manifestation-lecture@local',
+    'DTSTART;TZID=Africa/Abidjan:'+dt,
+    'RRULE:FREQ=DAILY;UNTIL=20270717T000000Z',
+    'SUMMARY:Lecture biblique — Année de la Manifestation',
+    "DESCRIPTION:Ouvrir l'appli pour la lecture et la méditation de la semaine.",
+    'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY',
+    'DESCRIPTION:Lecture du jour','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
+  a.download='rappel-lecture-biblique.ics';a.click();
+}
+
+/* ================= DÉMARRAGE ================= */
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.register('sw.js').then(()=>{activerSyncPeriodique();});
+}
+kvPut('settings',etat.settings);
+programmerRappelLocal();
+chargerVersion(etat.settings.version).catch(()=>{});
+rendre();
+</script>
+</body>
+</html>
