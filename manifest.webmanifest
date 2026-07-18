@@ -1,7 +1,7 @@
 {
-  "name": "L'Année de la Manifestation — Plan de lecture",
-  "short_name": "Manifestation",
-  "description": "Plan de lecture biblique de 52 semaines (18 juillet 2026 – 16 juillet 2027), sur le modèle de la deuxième année du ministère de Jésus. Lecture hors-ligne en Segond 1910, Darby et Martin 1744.",
+  "name": "Lecture & Esprit — parcours annuels",
+  "short_name": "Lecture&Esprit",
+  "description": "Deux parcours annuels de 52 semaines : L'Année de la Manifestation (lectures datées) et Une année avec l'Esprit Saint (lecture quotidienne, 4 piliers). Hors-ligne, 4 versions : Segond 1910, Crampon 1923, Darby, Martin 1744.",
   "lang": "fr",
   "start_url": "./index.html",
   "scope": "./",
@@ -10,8 +10,21 @@
   "background_color": "#10182B",
   "theme_color": "#10182B",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
