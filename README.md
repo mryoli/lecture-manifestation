@@ -1,24 +1,25 @@
-# L'Année de la Manifestation 🕯️
+# Lecture & Esprit 🕯️ — parcours annuels
 
-Plan de lecture biblique de 52 semaines (18 juillet 2026 → 16 juillet 2027), calqué sur la deuxième année du ministère de Jésus — l'année de la Manifestation.
+PWA hors-ligne proposant **deux parcours de 52 semaines** :
 
-**Application web progressive (PWA)** : installable sur Android, fonctionne 100 % hors-ligne après la première ouverture.
+## 1. L'Année de la Manifestation
+Plan de lecture biblique daté (18 juillet 2026 → 16 juillet 2027), calqué sur la deuxième année du ministère de Jésus. 4 trimestres : identité, constitution du Royaume, œuvre, discernement (le test de Jean 6).
+
+## 2. Une année avec l'Esprit Saint
+Parcours catholique quotidien (Lun→Ven + samedi de bilan), démarrable n'importe quel lundi. 4 piliers : **Connaître** (de la ruach au Paraclet) · **Recevoir** (grâce, sacrements, les 7 dons) · **Manifester** (fruits, charismes, témoignage) · **Discerner** (l'école ignatienne). Avec l'examen du soir en 5 points, les prières (Veni Creator, Veni Sancte Spiritus) et l'aide-mémoire des règles du discernement intégrés.
 
 ## Fonctionnalités
-- Plan complet des 52 semaines en 4 trimestres, avec dates et questions de méditation
-- Lecture des passages directement dans l'appli
-- 3 versions du domaine public embarquées : **Louis Segond 1910**, **Darby**, **Martin 1744**
+- Lecture des passages dans l'appli, 100 % hors-ligne après la première ouverture
+- 4 versions du domaine public : **Segond 1910**, **Crampon 1923** (catholique, deutérocanoniques Sagesse et Siracide inclus), **Darby**, **Martin 1744**
 - Comparaison de versions verset par verset (bouton ⇄)
-- Suivi de progression (anneau des 52 semaines, série en cours) — données 100 % locales
-- Rappel quotidien : notification (heure réglable) + export agenda (.ics) pour un rappel garanti
+- Suivi de progression séparé par parcours (anneau des 52 semaines) — données locales
+- Rappel quotidien : notification (heure réglable) + export agenda (.ics)
 
 ## Installation sur Android
-1. Ouvrir l'URL de l'appli dans Chrome
-2. Menu ⋮ → « Installer l'application » (ou « Ajouter à l'écran d'accueil »)
-3. Dans **Réglages** : fixer l'heure du rappel, autoriser les notifications, ajouter le rappel à l'agenda
+Ouvrir l'URL dans Chrome → menu ⋮ → « Installer l'application ». Puis dans Réglages : heure du rappel, notifications, rappel agenda.
 
 ## Mise à jour
-Remplacer les fichiers du dépôt, puis incrémenter la constante `VERSION` dans `sw.js` (ex. `manif-v2`) pour forcer le rafraîchissement du cache hors-ligne.
+Remplacer les fichiers, puis incrémenter `VERSION` dans `sw.js` (ex. `manif-v3`).
 
-## Sources des textes
-Textes bibliques du domaine public. « Ta parole est une lampe à mes pieds, et une lumière sur mon sentier. » — Psaume 119:105
+## Crédits des textes
+Textes bibliques du domaine public. Édition numérique Crampon 1923 : Jean-Marie Weber pour mission-web.com (CC BY-NC-SA 3.0) — usage personnel non commercial. « Ta parole est une lampe à mes pieds. » — Ps 119:105
