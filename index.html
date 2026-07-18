@@ -26,6 +26,7 @@ main{max-width:560px;margin:0 auto;padding:16px 16px 8px}
 .muted{color:var(--sourdine)}
 button{font:inherit;border:0;cursor:pointer;border-radius:var(--r)}
 .btn{background:var(--or);color:var(--encre);font-weight:700;padding:13px 18px;width:100%;font-size:16px}
+a.btn{display:block;text-align:center;text-decoration:none;box-sizing:border-box;border-radius:var(--r)}
 .btn.secondaire{background:var(--encre2);color:var(--texte-inv);border:1px solid var(--sourdine2)}
 .btn.fait{background:var(--vert);color:#fff}
 .btn:active{transform:scale(.98)}
@@ -478,7 +479,6 @@ function ecranPrieres(){
 
 function ecranReglages(){
   const st=etat.settings;
-  const perm=('Notification' in window)?Notification.permission:'unsupported';
   app.innerHTML=`
     <h1 class="serif" style="font-size:22px;margin:8px 0 10px">Réglages</h1>
 
@@ -494,27 +494,22 @@ function ecranReglages(){
       <button class="btn secondaire" id="btn-sonnerie">${st.sonnerie?'Désactiver la sonnerie':'Activer la sonnerie'}</button>
       <div style="height:8px"></div>
       <button class="btn secondaire" id="btn-sonnerie-test">Tester la sonnerie 🔔</button>
-      <div class="note">Un carillon de trois volées, joué à l'heure du rappel, calé sur l'horloge du téléphone (vérification toutes les 20 s). Il sonne quand l'appli est ouverte — appli fermée ou en arrière-plan profond, ce sont la notification et le rappel agenda qui prennent le relais. Le bouton « Tester » sert aussi à débloquer l'audio pour la session (exigence des navigateurs). Pense au volume média du téléphone.</div>
-    </div>
-
-    <div class="regl">
-      <label>Notifications
-        <span class="etat ${perm==='granted'?'ok':'non'}">${perm==='granted'?'autorisées':perm==='denied'?'refusées':'à autoriser'}</span></label>
-      <button class="btn secondaire" id="btn-notif">${perm==='granted'?'Envoyer une notification de test':'Autoriser les notifications'}</button>
-      <div class="note">Sur Android, l'appli installée utilise la synchronisation périodique : le rappel arrive dans la journée, sans garantie d'heure exacte. Pour un rappel fiable à heure fixe, ajoutez le rappel à votre agenda ci-dessous.</div>
+      <div class="note">Carillon de trois volées à l'heure du rappel, calé sur l'horloge du téléphone — sonne quand l'appli est ouverte. Appli fermée, c'est l'alarme Android ou l'agenda qui prend le relais. « Tester » débloque aussi l'audio pour la session ; penser au volume média.</div>
     </div>
 
     <div class="regl">
       <label>Rappel fiable — alarme native Android</label>
-      <button class="btn" id="btn-alarme">Créer l'alarme Android (${st.time})</button>
-      <div class="note">Ouvre l'application Horloge du téléphone avec l'alarme pré-remplie « Lecture biblique » à l'heure choisie ci-dessus. Confirmer, puis cocher « Répéter tous les jours » : l'alarme sonnera même appli fermée et téléphone verrouillé. (Si rien ne s'ouvre, votre navigateur bloque les intents — utilisez alors l'agenda ci-dessous.)</div>
+      <a class="btn" id="lien-alarme" href="${urlAlarmeAndroid()}">Créer l'alarme Android (${st.time})</a>
+      <div class="note">Ouvre l'Horloge du téléphone avec l'alarme « Lecture biblique » pré-remplie à ${st.time}. Confirmer, puis cocher « Répéter tous les jours » : elle sonnera même appli fermée et téléphone verrouillé.</div>
+      <details style="margin-top:8px"><summary class="note" style="cursor:pointer;color:var(--or-doux)">Rien ne s'ouvre ? Création manuelle (30 secondes)</summary>
+        <div class="note">Certains téléphones (notamment Xiaomi/MIUI) bloquent l'ouverture automatique. Dans ce cas : ouvrir l'appli <strong>Horloge</strong> → onglet <strong>Alarme</strong> → <strong>+</strong> → régler <strong>${st.time}</strong> → libellé « Lecture biblique » → <strong>Répéter : tous les jours</strong> → enregistrer. Même résultat, même fiabilité.</div>
+      </details>
     </div>
 
     <div class="regl">
       <label>Rappel fiable — Google Agenda</label>
-      <button class="btn secondaire" id="btn-gcal">Ajouter à Google Agenda</button>
-      <div class="note">Crée un événement quotidien récurrent « Lecture biblique » à l'heure choisie. Avant d'enregistrer, vérifier qu'une notification est bien présente dans l'événement (ajouter « 0 minute avant » si besoin).</div>
-      <button class="btn secondaire" id="btn-ics" style="margin-top:8px">Fichier .ics (autres agendas)</button>
+      <a class="btn secondaire" id="lien-gcal" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${urlGoogleAgenda()}">Ajouter à Google Agenda</a>
+      <div class="note">Ouvre Google Agenda avec l'événement quotidien « Lecture biblique » pré-rempli à ${st.time}. Avant d'enregistrer, vérifier qu'une notification figure dans l'événement (ajouter « 0 minute avant » si le champ est vide).</div>
     </div>
 
     <div class="regl">
@@ -537,18 +532,12 @@ function ecranReglages(){
   document.getElementById('heure').onchange=e=>{etat.settings.time=e.target.value;sauver();programmerRappelLocal();rendre();};
   document.getElementById('vdef').onchange=e=>{etat.settings.version=e.target.value;
     if(etat.settings.comparer===e.target.value)etat.settings.comparer='';sauver();};
-  document.getElementById('btn-notif').onclick=async()=>{
-    if(!('Notification' in window)){alert('Notifications non prises en charge par ce navigateur.');return;}
-    const p=await Notification.requestPermission();
-    if(p==='granted'){
-      const reg=await navigator.serviceWorker.ready;
-      reg.showNotification('Rappel activé 🕯️',{body:'Vous recevrez un rappel chaque jour à partir de '+etat.settings.time+'.',icon:'icon-192.png'});
-      activerSyncPeriodique();
-    }
-    rendre();};
-  document.getElementById('btn-alarme').onclick=alarmeAndroid;
-  document.getElementById('btn-gcal').onclick=lienGoogleAgenda;
-  document.getElementById('btn-ics').onclick=telechargerICS;
+  document.getElementById('btn-sonnerie').onclick=()=>{
+    etat.settings.sonnerie=!etat.settings.sonnerie; sauver(); rendre();};
+  document.getElementById('btn-sonnerie-test').onclick=()=>{
+    const ok=jouerSonnerie();
+    if(!ok) alert("L'audio n'a pas pu démarrer — réessayer après un tap, et vérifier le volume média.");
+  };
   document.getElementById('btn-reset').onclick=()=>{
     if(confirm('Effacer toute la progression des deux parcours ?')){
       etat.progres={manif:{},esprit:{}};sauver();rendre();}};
@@ -651,47 +640,28 @@ async function activerSyncPeriodique(){
     }
   }catch(e){}
 }
-function alarmeAndroid(){
+function urlAlarmeAndroid(){
   const [h,m]=etat.settings.time.split(':').map(Number);
-  const uri='intent:#Intent;action=android.intent.action.SET_ALARM;'+
+  return 'intent:#Intent;action=android.intent.action.SET_ALARM;'+
     'i.android.intent.extra.alarm.HOUR='+h+';'+
     'i.android.intent.extra.alarm.MINUTES='+m+';'+
-    'S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent('Lecture biblique 🕯️')+';'+
-    'b.android.intent.extra.alarm.SKIP_UI=false;end';
-  window.location.href=uri;
+    'S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent('Lecture biblique')+';'+
+    'b.android.intent.extra.alarm.SKIP_UI=false;'+
+    'S.browser_fallback_url='+encodeURIComponent('https://mryoli.github.io/lecture-manifestation/')+';end';
 }
-function lienGoogleAgenda(){
+function urlGoogleAgenda(){
   const [h,m]=etat.settings.time.split(':');
-  const d=new Date(); // première occurrence : aujourd'hui (ou demain si l'heure est passée)
+  const d=new Date(); // première occurrence : aujourd'hui, ou demain si l'heure est passée
   const cible=new Date(); cible.setHours(+h,+m,0,0);
   if(cible<=d) cible.setDate(cible.getDate()+1);
   const p=n=>String(n).padStart(2,'0');
   const fmt=x=>x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+'T'+p(x.getHours())+p(x.getMinutes())+'00';
-  const deb=fmt(cible);
-  const fin=fmt(new Date(cible.getTime()+15*60000));
-  const url='https://calendar.google.com/calendar/render?action=TEMPLATE'+
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'+
     '&text='+encodeURIComponent('Lecture biblique 🕯️')+
-    '&dates='+deb+'/'+fin+
+    '&dates='+fmt(cible)+'/'+fmt(new Date(cible.getTime()+15*60000))+
     '&recur='+encodeURIComponent('RRULE:FREQ=DAILY')+
     '&details='+encodeURIComponent("Ouvrir l'appli pour la lecture et la méditation du jour : https://mryoli.github.io/lecture-manifestation/")+
     '&ctz=Africa/Abidjan';
-  window.open(url,'_blank');
-}
-function telechargerICS(){
-  const [h,m]=etat.settings.time.split(':');
-  const d=new Date();
-  const dt=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+h.padStart(2,'0')+m.padStart(2,'0')+'00';
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//LectureEsprit//FR',
-    'BEGIN:VEVENT','UID:lecture-esprit-rappel@local',
-    'DTSTART;TZID=Africa/Abidjan:'+dt,
-    'RRULE:FREQ=DAILY',
-    'SUMMARY:Lecture & prière du jour',
-    "DESCRIPTION:Ouvrir l'appli pour la lecture et la méditation du jour.",
-    'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY',
-    'DESCRIPTION:Lecture du jour','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const a=document.createElement('a');
-  a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
-  a.download='rappel-lecture-quotidienne.ics';a.click();
 }
 
 /* ================= DÉMARRAGE ================= */
