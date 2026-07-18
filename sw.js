@@ -1,5 +1,5 @@
 /* Service worker — L'Année de la Manifestation */
-const VERSION = 'manif-v3';
+const VERSION = 'manif-v4';
 const CORE = [
   './',
   './index.html',
