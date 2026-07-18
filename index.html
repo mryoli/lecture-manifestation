@@ -501,8 +501,9 @@ function ecranReglages(){
       <label>Rappel fiable — alarme native Android</label>
       <a class="btn" id="lien-alarme" href="${urlAlarmeAndroid()}">Créer l'alarme Android (${st.time})</a>
       <div class="note">Ouvre l'Horloge du téléphone avec l'alarme « Lecture biblique » pré-remplie à ${st.time}. Confirmer, puis cocher « Répéter tous les jours » : elle sonnera même appli fermée et téléphone verrouillé.</div>
-      <details style="margin-top:8px"><summary class="note" style="cursor:pointer;color:var(--or-doux)">Rien ne s'ouvre ? Création manuelle (30 secondes)</summary>
-        <div class="note">Certains téléphones (notamment Xiaomi/MIUI) bloquent l'ouverture automatique. Dans ce cas : ouvrir l'appli <strong>Horloge</strong> → onglet <strong>Alarme</strong> → <strong>+</strong> → régler <strong>${st.time}</strong> → libellé « Lecture biblique » → <strong>Répéter : tous les jours</strong> → enregistrer. Même résultat, même fiabilité.</div>
+      <details style="margin-top:8px"><summary class="note" style="cursor:pointer;color:var(--or-doux)">Rien ne s'ouvre ? Deux solutions (Xiaomi/HyperOS)</summary>
+        <div class="note"><strong>1. Création manuelle (30 s, recommandé) :</strong> ouvrir l'appli <strong>Horloge</strong> → onglet <strong>Alarme</strong> → <strong>+</strong> → régler <strong>${st.time}</strong> → libellé « Lecture biblique » → <strong>Répéter : tous les jours</strong> → enregistrer. Même résultat, même fiabilité — et c'est à faire une seule fois.<br><br>
+        <strong>2. Débloquer HyperOS :</strong> Paramètres → Applications → Chrome (ou l'appli installée) → <strong>Autres autorisations</strong> → activer « Afficher les fenêtres contextuelles » et « Démarrer en arrière-plan », puis réessayer le bouton.</div>
       </details>
     </div>
 
@@ -643,6 +644,7 @@ async function activerSyncPeriodique(){
 function urlAlarmeAndroid(){
   const [h,m]=etat.settings.time.split(':').map(Number);
   return 'intent:#Intent;action=android.intent.action.SET_ALARM;'+
+    'package=com.android.deskclock;'+
     'i.android.intent.extra.alarm.HOUR='+h+';'+
     'i.android.intent.extra.alarm.MINUTES='+m+';'+
     'S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent('Lecture biblique')+';'+
