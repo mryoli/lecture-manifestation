@@ -6,7 +6,7 @@ PWA hors-ligne proposant **deux parcours de 52 semaines** :
 Plan de lecture biblique daté (18 juillet 2026 → 16 juillet 2027), calqué sur la deuxième année du ministère de Jésus. 4 trimestres : identité, constitution du Royaume, œuvre, discernement (le test de Jean 6).
 
 ## 2. Une année avec l'Esprit Saint
-Parcours catholique quotidien (Lun→Ven + samedi de bilan), démarrable n'importe quel lundi. 4 piliers : **Connaître** (de la ruach au Paraclet) · **Recevoir** (grâce, sacrements, les 7 dons) · **Manifester** (fruits, charismes, témoignage) · **Discerner** (l'école ignatienne). Avec l'examen du soir en 5 points, les prières (Veni Creator, Veni Sancte Spiritus) et l'aide-mémoire des règles du discernement intégrés.
+Parcours catholique quotidien (Lun→Ven + samedi de bilan), du 18 juillet 2026 au 16 juillet 2027, en parallèle de la Manifestation ; progression cochable jour par jour. 4 piliers : **Connaître** (de la ruach au Paraclet) · **Recevoir** (grâce, sacrements, les 7 dons) · **Manifester** (fruits, charismes, témoignage) · **Discerner** (l'école ignatienne). Avec l'examen du soir en 5 points, les prières (Veni Creator, Veni Sancte Spiritus) et l'aide-mémoire des règles du discernement intégrés.
 
 ## Fonctionnalités
 - Lecture des passages dans l'appli, 100 % hors-ligne après la première ouverture
