@@ -151,7 +151,7 @@ let etat = {
   }
   etat.progres = prog;
   etat.settings = Object.assign(
-    {time:'06:00',version:'lsg',comparer:'',notif:true,parcours:'manif'},
+    {time:'06:00',version:'lsg',comparer:'',notif:true,sonnerie:true,parcours:'manif'},
     JSON.parse(localStorage.getItem('settings')||'{}'));
 })();
 function sauver(){
@@ -489,6 +489,15 @@ function ecranReglages(){
     </div>
 
     <div class="regl">
+      <label>Sonnerie interne
+        <span class="etat ${st.sonnerie?'ok':'non'}">${st.sonnerie?'activée':'désactivée'}</span></label>
+      <button class="btn secondaire" id="btn-sonnerie">${st.sonnerie?'Désactiver la sonnerie':'Activer la sonnerie'}</button>
+      <div style="height:8px"></div>
+      <button class="btn secondaire" id="btn-sonnerie-test">Tester la sonnerie 🔔</button>
+      <div class="note">Un carillon de trois volées, joué à l'heure du rappel, calé sur l'horloge du téléphone (vérification toutes les 20 s). Il sonne quand l'appli est ouverte — appli fermée ou en arrière-plan profond, ce sont la notification et le rappel agenda qui prennent le relais. Le bouton « Tester » sert aussi à débloquer l'audio pour la session (exigence des navigateurs). Pense au volume média du téléphone.</div>
+    </div>
+
+    <div class="regl">
       <label>Notifications
         <span class="etat ${perm==='granted'?'ok':'non'}">${perm==='granted'?'autorisées':perm==='denied'?'refusées':'à autoriser'}</span></label>
       <button class="btn secondaire" id="btn-notif">${perm==='granted'?'Envoyer une notification de test':'Autoriser les notifications'}</button>
@@ -496,9 +505,16 @@ function ecranReglages(){
     </div>
 
     <div class="regl">
-      <label>Rappel fiable via l'agenda</label>
-      <button class="btn secondaire" id="btn-ics">Ajouter à mon agenda (.ics)</button>
-      <div class="note">Événement quotidien récurrent « Lecture & prière » à l'heure choisie, avec alerte — le rappel garanti à 100 %.</div>
+      <label>Rappel fiable — alarme native Android</label>
+      <button class="btn" id="btn-alarme">Créer l'alarme Android (${st.time})</button>
+      <div class="note">Ouvre l'application Horloge du téléphone avec l'alarme pré-remplie « Lecture biblique » à l'heure choisie ci-dessus. Confirmer, puis cocher « Répéter tous les jours » : l'alarme sonnera même appli fermée et téléphone verrouillé. (Si rien ne s'ouvre, votre navigateur bloque les intents — utilisez alors l'agenda ci-dessous.)</div>
+    </div>
+
+    <div class="regl">
+      <label>Rappel fiable — Google Agenda</label>
+      <button class="btn secondaire" id="btn-gcal">Ajouter à Google Agenda</button>
+      <div class="note">Crée un événement quotidien récurrent « Lecture biblique » à l'heure choisie. Avant d'enregistrer, vérifier qu'une notification est bien présente dans l'événement (ajouter « 0 minute avant » si besoin).</div>
+      <button class="btn secondaire" id="btn-ics" style="margin-top:8px">Fichier .ics (autres agendas)</button>
     </div>
 
     <div class="regl">
@@ -518,7 +534,7 @@ function ecranReglages(){
     Données 100 % locales sur cet appareil.<br><br>
     Texte Crampon : Bible catholique du chanoine Crampon, édition 1923 — édition numérique Jean-Marie Weber pour mission-web.com (CC BY-NC-SA 3.0). Usage personnel et non commercial.</p>`;
 
-  document.getElementById('heure').onchange=e=>{etat.settings.time=e.target.value;sauver();programmerRappelLocal();};
+  document.getElementById('heure').onchange=e=>{etat.settings.time=e.target.value;sauver();programmerRappelLocal();rendre();};
   document.getElementById('vdef').onchange=e=>{etat.settings.version=e.target.value;
     if(etat.settings.comparer===e.target.value)etat.settings.comparer='';sauver();};
   document.getElementById('btn-notif').onclick=async()=>{
@@ -530,6 +546,8 @@ function ecranReglages(){
       activerSyncPeriodique();
     }
     rendre();};
+  document.getElementById('btn-alarme').onclick=alarmeAndroid;
+  document.getElementById('btn-gcal').onclick=lienGoogleAgenda;
   document.getElementById('btn-ics').onclick=telechargerICS;
   document.getElementById('btn-reset').onclick=()=>{
     if(confirm('Effacer toute la progression des deux parcours ?')){
@@ -567,20 +585,62 @@ function rendre(){
   window.scrollTo(0,0);
 }
 
-/* ================= RAPPELS ================= */
-let minuterie=null;
-function programmerRappelLocal(){
-  if(minuterie)clearTimeout(minuterie);
-  if(!('Notification'in window)||Notification.permission!=='granted')return;
-  const [h,m]=etat.settings.time.split(':').map(Number);
-  const cible=new Date();cible.setHours(h,m,0,0);
-  if(cible<=new Date())cible.setDate(cible.getDate()+1);
-  minuterie=setTimeout(async()=>{
-    const reg=await navigator.serviceWorker.ready;
-    reg.active&&reg.active.postMessage('show-reminder');
-    programmerRappelLocal();
-  },cible-new Date());
+/* ================= RAPPELS & SONNERIE ================= */
+let audioCtx=null;
+function initAudio(){ // à appeler depuis un geste utilisateur (test) pour débloquer l'audio
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+  }catch(e){}
+  return audioCtx;
 }
+function coupDeCloche(ctx,t0,freq,duree,vol){
+  // cloche synthétisée : fondamentale + 2 partiels inharmoniques, enveloppe exponentielle
+  [[1,1],[2.76,0.4],[5.4,0.18]].forEach(([mult,g])=>{
+    const o=ctx.createOscillator(), gn=ctx.createGain();
+    o.type='sine'; o.frequency.value=freq*mult;
+    gn.gain.setValueAtTime(0.0001,t0);
+    gn.gain.exponentialRampToValueAtTime(vol*g,t0+0.012);
+    gn.gain.exponentialRampToValueAtTime(0.0001,t0+duree);
+    o.connect(gn); gn.connect(ctx.destination);
+    o.start(t0); o.stop(t0+duree+0.05);
+  });
+}
+function jouerSonnerie(){
+  const ctx=initAudio();
+  if(!ctx) return false;
+  if(ctx.state==='suspended'){ ctx.resume().catch(()=>{}); }
+  if(ctx.state!=='running') return false;
+  const t=ctx.currentTime+0.05;
+  // carillon « angélus » : trois volées de trois coups
+  for(let v=0; v<3; v++){
+    const base=t+v*2.2;
+    coupDeCloche(ctx,base,       880,1.6,0.22); // La5
+    coupDeCloche(ctx,base+0.55, 1046.5,1.5,0.20); // Do6
+    coupDeCloche(ctx,base+1.1,   784,1.9,0.24); // Sol5
+  }
+  return true;
+}
+function verifierRappel(){
+  // s'aligne sur l'horloge du téléphone : comparaison directe HH:MM, toutes les 20 s
+  const st=etat.settings;
+  const [h,m]=st.time.split(':').map(Number);
+  const now=new Date();
+  const auj=now.toISOString().slice(0,10);
+  const passe = now.getHours()>h || (now.getHours()===h && now.getMinutes()>=m);
+  if(!passe) return;
+  if(localStorage.getItem('derniereSonnerie')===auj) return;
+  localStorage.setItem('derniereSonnerie',auj);
+  if(st.sonnerie) jouerSonnerie();
+  if('Notification' in window && Notification.permission==='granted'){
+    navigator.serviceWorker.ready.then(reg=>{
+      reg.active&&reg.active.postMessage('show-reminder');
+    }).catch(()=>{});
+  }
+}
+function programmerRappelLocal(){ /* conservé pour compatibilité : la boucle fait le travail */ }
+setInterval(verifierRappel,20000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) verifierRappel(); });
 async function activerSyncPeriodique(){
   try{
     const reg=await navigator.serviceWorker.ready;
@@ -590,6 +650,32 @@ async function activerSyncPeriodique(){
         await reg.periodicSync.register('rappel-lecture',{minInterval:6*60*60*1000});
     }
   }catch(e){}
+}
+function alarmeAndroid(){
+  const [h,m]=etat.settings.time.split(':').map(Number);
+  const uri='intent:#Intent;action=android.intent.action.SET_ALARM;'+
+    'i.android.intent.extra.alarm.HOUR='+h+';'+
+    'i.android.intent.extra.alarm.MINUTES='+m+';'+
+    'S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent('Lecture biblique 🕯️')+';'+
+    'b.android.intent.extra.alarm.SKIP_UI=false;end';
+  window.location.href=uri;
+}
+function lienGoogleAgenda(){
+  const [h,m]=etat.settings.time.split(':');
+  const d=new Date(); // première occurrence : aujourd'hui (ou demain si l'heure est passée)
+  const cible=new Date(); cible.setHours(+h,+m,0,0);
+  if(cible<=d) cible.setDate(cible.getDate()+1);
+  const p=n=>String(n).padStart(2,'0');
+  const fmt=x=>x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+'T'+p(x.getHours())+p(x.getMinutes())+'00';
+  const deb=fmt(cible);
+  const fin=fmt(new Date(cible.getTime()+15*60000));
+  const url='https://calendar.google.com/calendar/render?action=TEMPLATE'+
+    '&text='+encodeURIComponent('Lecture biblique 🕯️')+
+    '&dates='+deb+'/'+fin+
+    '&recur='+encodeURIComponent('RRULE:FREQ=DAILY')+
+    '&details='+encodeURIComponent("Ouvrir l'appli pour la lecture et la méditation du jour : https://mryoli.github.io/lecture-manifestation/")+
+    '&ctz=Africa/Abidjan';
+  window.open(url,'_blank');
 }
 function telechargerICS(){
   const [h,m]=etat.settings.time.split(':');
