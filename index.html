@@ -120,6 +120,7 @@ table.regles td:first-child{font-weight:700;white-space:nowrap;color:#8A6D12}
 <script>
 /* ================= CONSTANTES ================= */
 const DEBUT_MANIF = new Date(2026, 6, 18);
+const DEBUT_ESPRIT = new Date(2026, 6, 18); // samedi 18 juillet 2026 — semaines Sam→Ven
 const LIVRES = {1:'Genèse',2:'Exode',4:'Nombres',5:'Deutéronome',7:'Juges',9:'1 Samuel',11:'1 Rois',
  16:'Néhémie',18:'Job',19:'Psaume',20:'Proverbes',21:'Ecclésiaste',23:'Ésaïe',24:'Jérémie',
  26:'Ézéchiel',28:'Osée',29:'Joël',30:'Amos',33:'Michée',38:'Zacharie',40:'Matthieu',41:'Marc',
@@ -150,7 +151,7 @@ let etat = {
   }
   etat.progres = prog;
   etat.settings = Object.assign(
-    {time:'06:00',version:'lsg',comparer:'',notif:true,parcours:'manif',espritDebut:null},
+    {time:'06:00',version:'lsg',comparer:'',notif:true,parcours:'manif'},
     JSON.parse(localStorage.getItem('settings')||'{}'));
 })();
 function sauver(){
@@ -167,8 +168,7 @@ async function kvPut(k,v){try{const db=await idb();
 /* ================= DATES & SEMAINES ================= */
 function stripT(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
 function debutParcours(pid){
-  if(pid==='manif') return DEBUT_MANIF;
-  return etat.settings.espritDebut ? new Date(etat.settings.espritDebut+'T00:00:00') : null;
+  return pid==='manif' ? DEBUT_MANIF : DEBUT_ESPRIT;
 }
 function semaineCourante(pid){
   const deb = debutParcours(pid);
@@ -184,14 +184,23 @@ function datesSemaine(pid,n){
   const f=d=>d.getDate()+' '+MOIS[d.getMonth()];
   return f(s)+' – '+f(e)+' '+e.getFullYear();
 }
-function lundiDeCetteSemaine(){
-  const d=new Date(); const j=(d.getDay()+6)%7; // 0=lundi
-  d.setDate(d.getDate()-j); d.setHours(0,0,0,0);
-  return d;
+function offSam(){ // position dans la semaine Sam→Ven : 0=Sam,1=Dim,2..6=Lun..Ven
+  return (new Date().getDay()+1)%7;
 }
-function jourAuj(){ // 0..4 = Lun..Ven ; 5 = Sam ; 6 = Dim
-  return (new Date().getDay()+6)%7;
+function jourLectureAuj(){ // index 0..4 du jour de lecture (Lun..Ven), sinon -1
+  const o=offSam(); return o>=2 ? o-2 : -1;
 }
+/* ---- Progression quotidienne (parcours esprit) ---- */
+function estFaitJour(w,d){const p=etat.progres.esprit;return !!(p[w]===true||p[w+'j'+d]);}
+function joursFaitsSemaine(w){let n=0;for(let d=0;d<5;d++)if(estFaitJour(w,d))n++;return n;}
+function semaineEspritComplete(w){return joursFaitsSemaine(w)===5;}
+function totalJoursEsprit(){let n=0;for(let w=1;w<=52;w++)n+=joursFaitsSemaine(w);return n;}
+function basculeJour(w,d){const p=etat.progres.esprit;
+  if(p[w]===true){delete p[w];for(let i=0;i<5;i++)if(i!==d)p[w+'j'+i]=true;}
+  else if(p[w+'j'+d])delete p[w+'j'+d];else p[w+'j'+d]=true;}
+function basculeSemaineEsprit(w){const p=etat.progres.esprit;const plein=semaineEspritComplete(w);
+  delete p[w];for(let d=0;d<5;d++)delete p[w+'j'+d];
+  if(!plein){for(let d=0;d<5;d++)p[w+'j'+d]=true;}}
 
 /* ================= TEXTES ================= */
 async function chargerVersion(v){
@@ -234,13 +243,14 @@ function rendreNav(){
 function ouvrirSemaineCourante(){
   const pid=etat.settings.parcours;
   etat.semaineOuverte=Math.max(1,semaineCourante(pid)||1);
-  etat.jourOuvert=Math.min(4,jourAuj());
+  const j=jourLectureAuj();
+  etat.jourOuvert=j>=0?j:0;
 }
 function selecteurParcours(){
   const p=etat.settings.parcours;
   return `<div class="parcours-sel">
     <button data-p="manif" class="${p==='manif'?'actif':''}">La Manifestation<small>Année 31→32 · lectures datées</small></button>
-    <button data-p="esprit" class="${p==='esprit'?'actif':''}">L'Esprit Saint<small>4 piliers · lecture quotidienne</small></button>
+    <button data-p="esprit" class="${p==='esprit'?'actif':''}">L'Esprit Saint<small>4 piliers · jour par jour</small></button>
   </div>`;
 }
 function brancherParcours(){
@@ -250,17 +260,21 @@ function brancherParcours(){
 function anneauSVG(pid){
   const c=semaineCourante(pid); const R=88,cx=105,cy=105,n=52;
   const prog=etat.progres[pid]||{};
+  const espr=pid==='esprit';
   let segs='';
   for(let i=0;i<n;i++){
     const a0=(-90+i*(360/n)+1.6)*Math.PI/180, a1=(-90+(i+1)*(360/n)-1.6)*Math.PI/180;
     const x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0),x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
-    const cls=prog[i+1]?'seg fait':(i+1===c?'seg actuel':'seg');
+    const fait = espr ? semaineEspritComplete(i+1) : prog[i+1];
+    const cls=fait?'seg fait':(i+1===c?'seg actuel':'seg');
     segs+=`<path class="${cls}" d="M${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}"/>`;
   }
-  const faites=Object.keys(prog).length;
+  const compte = espr ? totalJoursEsprit() : Object.keys(prog).length;
+  const total = espr ? 260 : 52;
+  const label = espr ? 'JOURS LUS' : 'SEMAINES LUES';
   return `<svg viewBox="0 0 210 210">${segs}
-    <text class="anneau-centre gros" x="105" y="100" text-anchor="middle">${faites}<tspan class="petit"> /52</tspan></text>
-    <text class="anneau-centre petit" x="105" y="122" text-anchor="middle">SEMAINES LUES</text></svg>`;
+    <text class="anneau-centre gros" x="105" y="100" text-anchor="middle">${compte}<tspan class="petit"> /${total}</tspan></text>
+    <text class="anneau-centre petit" x="105" y="122" text-anchor="middle">${label}</text></svg>`;
 }
 
 function ecranAujourdhui(){
@@ -268,12 +282,7 @@ function ecranAujourdhui(){
   const plan=PLANS[pid];
   const c=semaineCourante(pid);
   let carte='';
-  if(pid==='esprit'&&!etat.settings.espritDebut){
-    carte=`<div class="carte"><div class="eyebrow">Une année avec l'Esprit Saint</div>
-      <h2 class="serif" style="margin:6px 0 4px">Connaître · Recevoir · Manifester · Discerner</h2>
-      <p style="margin:6px 0 12px">52 semaines de lecture quotidienne (Lun→Ven), samedi de bilan, examen du soir en 5 points. Le parcours commence le lundi de la semaine où tu le lances.</p>
-      <button class="btn" id="btn-demarrer">Commencer cette semaine</button></div>`;
-  } else if(c===0){
+  if(c===0){
     const deb=debutParcours(pid);
     const j=Math.ceil((stripT(deb)-stripT(new Date()))/86400000);
     carte=`<div class="carte"><div class="eyebrow">Avant le départ</div>
@@ -291,20 +300,33 @@ function ecranAujourdhui(){
         <button class="btn ${etat.progres[pid][c]?'fait':'secondaire'}" data-coche="${c}">
           ${etat.progres[pid][c]?'✓ Semaine lue':'Marquer la semaine comme lue'}</button></div>`;
     } else {
-      const j=jourAuj();
-      const jourTxt = j<=4 ? ('Lecture du jour — '+['lundi','mardi','mercredi','jeudi','vendredi'][j])
-                    : (j===5 ? 'Samedi — relecture et bilan de la semaine au carnet'
-                             : 'Dimanche — messe et Veni Creator');
-      const lectJour = j<=4 ? s.d[j].map(p=>Array.isArray(p)?refLisible(p):'Repère du jour').join(' · ') : '';
+      const o=offSam(); const j=o-2; // -2=Sam, -1=Dim, 0..4=Lun..Ven
+      let corps='', boutons=`<button class="btn" data-lire="${c}">Ouvrir la lecture</button>`;
+      if(o===0){ // samedi
+        if(c===1 && stripT(new Date())===stripT(DEBUT_ESPRIT)){
+          corps=`<p style="margin:4px 0"><strong>Jour 1 — ouverture de l'année.</strong> Bienvenue dans le parcours : lire la question de la semaine, préparer le carnet, et ce soir, premier examen en 5 points (Prières ✦ dans l'écran Lecture).</p>`;
+        } else {
+          const prec = c>1 ? PLANS.esprit.semaines[c-2] : null;
+          corps=`<p style="margin:4px 0"><strong>Samedi — bilan au carnet${prec?' de la semaine écoulée':''}.</strong></p>`+
+            (prec?`<div class="question serif">${esc(prec.q)}</div>`:``)+
+            `<p style="margin:6px 0 2px" class="muted">Nouvelle semaine : <strong>${esc(s.th)}</strong> — les lectures reprennent lundi.</p>`;
+        }
+      } else if(o===1){ // dimanche
+        corps=`<p style="margin:4px 0"><strong>Dimanche — messe et Veni Creator.</strong> Écouter les mentions de l'Esprit dans la liturgie (Gloria, Credo, épiclèse).</p>
+        <div class="question serif">${esc(s.q)}</div>`;
+      } else { // lundi → vendredi
+        const lectJour = s.d[j].map(p=>Array.isArray(p)?refLisible(p):'Repère du jour').join(' · ');
+        const fait = estFaitJour(c,j);
+        corps=`<p style="margin:4px 0"><strong>Lecture du jour — ${['lundi','mardi','mercredi','jeudi','vendredi'][j]}</strong> : ${esc(lectJour)}</p>
+        <div class="question serif">${esc(s.q)}</div>`;
+        boutons+=`<div style="height:10px"></div>
+        <button class="btn ${fait?'fait':'secondaire'}" data-cochejour="${c}:${j}">
+          ${fait?'✓ Jour lu':'Marquer le jour comme lu'}</button>`;
+      }
       carte=`<div class="carte">
-        <div class="eyebrow">Semaine ${c} · ${datesSemaine(pid,c)}</div>
+        <div class="eyebrow">Semaine ${c} · ${datesSemaine(pid,c)} · ${joursFaitsSemaine(c)}/5 jours</div>
         <h2 class="serif" style="margin:6px 0 2px">${esc(s.th)}</h2>
-        <p style="margin:4px 0"><strong>${jourTxt}</strong>${lectJour?' : '+esc(lectJour):''}</p>
-        <div class="question serif">${esc(s.q)}</div>
-        <button class="btn" data-lire="${c}">Ouvrir la lecture</button>
-        <div style="height:10px"></div>
-        <button class="btn ${etat.progres[pid][c]?'fait':'secondaire'}" data-coche="${c}">
-          ${etat.progres[pid][c]?'✓ Semaine lue':'Marquer la semaine comme lue'}</button></div>`;
+        ${corps}${boutons}</div>`;
     }
   }
   const titre = pid==='manif' ? '« Ta parole est une lampe à mes pieds »' : '« L\u2019Esprit et l\u2019Épouse disent : Viens ! »';
@@ -313,34 +335,30 @@ function ecranAujourdhui(){
     <div class="anneau-wrap">${anneauSVG(pid)}</div>
     ${carte}`;
   brancherParcours(); brancherActions();
-  const bd=document.getElementById('btn-demarrer');
-  if(bd) bd.onclick=()=>{
-    const l=lundiDeCetteSemaine();
-    etat.settings.espritDebut=l.getFullYear()+'-'+String(l.getMonth()+1).padStart(2,'0')+'-'+String(l.getDate()).padStart(2,'0');
-    sauver(); rendre();
-  };
 }
 
 function ecranPlan(){
   const pid=etat.settings.parcours;
   const plan=PLANS[pid];
   const c=semaineCourante(pid);
-  const demarre = pid!=='esprit'||!!etat.settings.espritDebut;
   app.innerHTML=selecteurParcours()+
    `<h1 class="serif" style="font-size:21px;margin:8px 0 4px">${esc(plan.nom)}</h1>
-    <p class="muted" style="font-size:14px">Touchez une semaine pour lire. Touchez le rond pour cocher.</p>`+
+    <p class="muted" style="font-size:14px">Touchez une semaine pour lire. Touchez le rond pour cocher${pid==='esprit'?' la semaine entière':''}.</p>`+
   plan.trimestres.map((t,ti)=>{
     const ouvert=(c>=t.de+1&&c<=t.a+1)||(c===0&&ti===0);
     const lignes=plan.semaines.slice(t.de,t.a+1).map((s,ix)=>{
       const w=t.de+ix+1;
       const titre = pid==='manif'?s.r:s.th;
-      const sous = pid==='manif'?datesSemaine(pid,w):(demarre?datesSemaine(pid,w):refsSemaineEsprit(s));
-      return `<div class="sem ${etat.progres[pid][w]?'faite':''} ${w===c?'courante':''}" data-lire="${w}">
+      const jf = pid==='esprit'?joursFaitsSemaine(w):0;
+      const sous = datesSemaine(pid,w)+(pid==='esprit'?` · ${jf}/5 j`:'');
+      const faite = pid==='esprit'?semaineEspritComplete(w):etat.progres[pid][w];
+      return `<div class="sem ${faite?'faite':''} ${w===c?'courante':''}" data-lire="${w}">
         <span class="num">S${w}</span>
         <span class="infos"><span class="refs">${esc(titre)}</span><br><span class="dates">${esc(sous)}</span></span>
         <button class="coche" data-coche="${w}" aria-label="Marquer la semaine ${w}">✓</button></div>`;
     }).join('');
-    const nfaites=plan.semaines.slice(t.de,t.a+1).filter((_,ix)=>etat.progres[pid][t.de+ix+1]).length;
+    const nfaites=plan.semaines.slice(t.de,t.a+1).filter((_,ix)=>
+      pid==='esprit'?semaineEspritComplete(t.de+ix+1):etat.progres[pid][t.de+ix+1]).length;
     return `<details class="trim" ${ouvert?'open':''}><summary>
       <span><strong>${esc(t.titre)}</strong><br><span class="muted" style="font-size:12px">${esc(t.sous)}</span></span>
       <span class="muted">${nfaites}/13</span>
@@ -358,7 +376,7 @@ async function ecranLecture(){
   const v1=etat.settings.version, v2=etat.settings.comparer;
   const titre = pid==='manif'?s.r:s.th;
   const jourChips = pid==='esprit'
-    ? `<div class="jour-chips">${JOURS.map((j,ix)=>`<button class="puce ${ix===etat.jourOuvert?'active':''}" data-j="${ix}">${j}</button>`).join('')}
+    ? `<div class="jour-chips">${JOURS.map((j,ix)=>`<button class="puce ${ix===etat.jourOuvert?'active':''}" data-j="${ix}">${j}${estFaitJour(w,ix)?' ✓':''}</button>`).join('')}
        <button class="puce" data-j="prieres">Prières ✦</button></div>` : '';
   app.innerHTML=`
     <button class="retour" id="retour">‹ Plan</button>
@@ -370,9 +388,11 @@ async function ecranLecture(){
       <button class="puce ${v2?'active':''}" id="btn-comp">${v2?('⇄ '+VERSIONS[v2].nom):'⇄ Comparer'}</button>
     </div>
     <div id="texte"><div class="chargement">Chargement du texte…</div></div>
-    <div class="carte"><div class="eyebrow">Méditation de la semaine</div>
+    <div class="carte"><div class="eyebrow">Méditation de la semaine${pid==='esprit'?` · ${joursFaitsSemaine(w)}/5 jours`:''}</div>
       <div class="question serif">${esc(s.q)}</div>
-      <button class="btn ${etat.progres[pid][w]?'fait':''}" data-coche="${w}">${etat.progres[pid][w]?'✓ Semaine lue':'Marquer la semaine comme lue'}</button>
+      ${pid==='esprit'
+        ? `<button class="btn ${estFaitJour(w,etat.jourOuvert)?'fait':''}" data-cochejour="${w}:${etat.jourOuvert}">${estFaitJour(w,etat.jourOuvert)?'✓ Jour lu ('+JOURS[etat.jourOuvert]+')':'Marquer ce jour comme lu ('+JOURS[etat.jourOuvert]+')'}</button>`
+        : `<button class="btn ${etat.progres[pid][w]?'fait':''}" data-coche="${w}">${etat.progres[pid][w]?'✓ Semaine lue':'Marquer la semaine comme lue'}</button>`}
     </div>`;
   document.getElementById('retour').onclick=()=>{etat.ecran='plan';rendre();};
   document.querySelectorAll('#vbar [data-v]').forEach(b=>b.onclick=()=>{
@@ -489,8 +509,7 @@ function ecranReglages(){
 
     <div class="regl">
       <label>Parcours « Une année avec l'Esprit Saint »</label>
-      <div class="note">${st.espritDebut?('Commencé le lundi '+st.espritDebut+'.'):'Pas encore commencé — lancez-le depuis l\u2019écran Aujourd\u2019hui.'}</div>
-      ${st.espritDebut?'<button class="btn secondaire" id="btn-esprit-reset" style="margin-top:8px">Réinitialiser la date de départ</button>':''}
+      <div class="note">Du samedi 18 juillet 2026 au vendredi 16 juillet 2027, en parallèle de l'Année de la Manifestation. Rythme : lectures du lundi au vendredi (cochables jour par jour), samedi de bilan au carnet, dimanche messe et Veni Creator. L'examen du soir (5 points) court tous les jours de l'année.</div>
     </div>
 
     <hr class="filet">
@@ -512,10 +531,6 @@ function ecranReglages(){
     }
     rendre();};
   document.getElementById('btn-ics').onclick=telechargerICS;
-  const ber=document.getElementById('btn-esprit-reset');
-  if(ber) ber.onclick=()=>{
-    if(confirm('Réinitialiser la date de départ du parcours Esprit Saint ? (la progression cochée est conservée)')){
-      etat.settings.espritDebut=null;sauver();rendre();}};
   document.getElementById('btn-reset').onclick=()=>{
     if(confirm('Effacer toute la progression des deux parcours ?')){
       etat.progres={manif:{},esprit:{}};sauver();rendre();}};
@@ -524,15 +539,23 @@ function ecranReglages(){
 function brancherActions(){
   const pid=etat.settings.parcours;
   document.querySelectorAll('[data-lire]').forEach(el=>el.addEventListener('click',ev=>{
-    if(ev.target.closest('[data-coche]'))return;
+    if(ev.target.closest('[data-coche],[data-cochejour]'))return;
     etat.semaineOuverte=parseInt(el.dataset.lire,10);
-    etat.jourOuvert=(etat.semaineOuverte===semaineCourante(pid))?Math.min(4,jourAuj()):0;
+    const j=jourLectureAuj();
+    etat.jourOuvert=(etat.semaineOuverte===semaineCourante(pid)&&j>=0)?j:0;
     kvPut('lastReadDay',new Date().toISOString().slice(0,10));
     etat.ecran='lecture';rendre();}));
   document.querySelectorAll('[data-coche]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();
     const w=parseInt(el.dataset.coche,10);
-    if(etat.progres[pid][w])delete etat.progres[pid][w];else etat.progres[pid][w]=true;
+    if(pid==='esprit') basculeSemaineEsprit(w);
+    else { if(etat.progres[pid][w])delete etat.progres[pid][w];else etat.progres[pid][w]=true; }
+    kvPut('lastReadDay',new Date().toISOString().slice(0,10));
+    sauver();rendre();}));
+  document.querySelectorAll('[data-cochejour]').forEach(el=>el.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    const [w,d]=el.dataset.cochejour.split(':').map(Number);
+    basculeJour(w,d);
     kvPut('lastReadDay',new Date().toISOString().slice(0,10));
     sauver();rendre();}));
 }
