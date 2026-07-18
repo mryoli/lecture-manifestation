@@ -1,12 +1,14 @@
 /* Service worker — L'Année de la Manifestation */
-const VERSION = 'manif-v1';
+const VERSION = 'manif-v2';
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
+  './data/plans.json',
   './data/lsg_plan.json',
+  './data/crampon_plan.json',
   './data/darby_plan.json',
   './data/martin_plan.json'
 ];
@@ -81,7 +83,7 @@ async function maybeRemind() {
       tx.onsuccess = res; tx.onerror = res;
     });
     await self.registration.showNotification('Lecture du jour 🕯️', {
-      body: 'Ta parole est une lampe à mes pieds. Ouvre la lecture de la semaine.',
+      body: 'Ta parole est une lampe à mes pieds. Ouvre la lecture du jour.',
       icon: './icon-192.png',
       badge: './icon-192.png',
       tag: 'rappel-lecture',
